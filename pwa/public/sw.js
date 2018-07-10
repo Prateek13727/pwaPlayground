@@ -1,9 +1,13 @@
-var CACHE_STATIC_NAME = "static-v15";
+importScripts('/src/js/idb.js');
+importScripts('/src/js/utility.js');
+
+var CACHE_STATIC_NAME = "static-v1";
 var CACHE_DYNAMIC_NAME = "dynamic-v1";
 var STATIC_FILES = [
   "/", 
   "/index.html", 
-  "/offline.html", 
+  "/offline.html",
+  '/src/js/idb.js', 
   "/src/js/app.js", 
   "/src/js/feed.js",
   "/src/js/material.min.js", 
@@ -14,6 +18,31 @@ var STATIC_FILES = [
   "/src/css/feed.css",
   "/src/images/main-image.jpg"
 ]
+
+function trimCache(cacheName, maxItems) {
+  caches.open("dynamic-v1")
+   .then((cache) => {
+     cache.keys()
+       .then((keys) => {
+          if(keys.length > maxItems) {
+            cache.delete(keys[0])
+             .then(function(){
+                trimCache(CACHE_DYNAMIC_NAME, 3)
+             })
+          }
+      })
+  })
+}
+
+function isInArray(string, array) {
+  var cachePath;
+  if (string.indexOf(self.origin) === 0) { // request targets domain where we serve the page from (i.e. NOT a CDN)
+    cachePath = string.substring(self.origin.length); // take the part of the URL AFTER the domain (e.g. after localhost:8080)
+  } else {
+    cachePath = string; // store the full request (for CDNs)
+  }
+  return array.indexOf(cachePath) > -1;
+}
 
 self.addEventListener('install', function(event) {
   console.log('[Service Worker] Installing Service Worker ...', event);
@@ -43,20 +72,26 @@ self.addEventListener('activate', function(event) {
 })
 
 self.addEventListener('fetch', function(event) {
-  const url = 'https://httpbin.org/get';
+  const url = 'https://pwagram-fb9d3.firebaseio.com/posts.json';
   //cache then network  
   if (event.request.url.indexOf(url) > -1) {
     event.respondWith(
-    caches.open(CACHE_DYNAMIC_NAME)
-      .then(function(cache) {
-        return fetch(event.request)
-          .then(function(response) {
-            cache.put(event.request.url, response.clone())
-            return response
+      fetch(event.request)
+        .then(function(response) {
+          const clonedResponse = response.clone();
+          clearAllData('posts')
+            .then(function(){
+              return clonedResponse.json()
+            })
+            .then(function(data){
+              for(key in data) {
+                writeData('posts', data[key])
+              }
           })
-      })
+          return response;
+        })
     )  
-  } else if(new RegExp('\\b' + STATIC_FILES.join('\\b|\\b') + '\\b').test(event.request.url)) {
+  } else if(isInArray(STATIC_FILES, event.request.url)) {
     event.respondWith(
       caches.match(event.request)
     )
@@ -72,6 +107,7 @@ self.addEventListener('fetch', function(event) {
             .then(function(res) {
               return caches.open(CACHE_DYNAMIC_NAME)
               .then(function(cache) {
+                // trimCache(CACHE_DYNAMIC_NAME, 3)
                 cache.put(event.request.url, res.clone())
                 return res
               })
@@ -79,10 +115,10 @@ self.addEventListener('fetch', function(event) {
             .catch(function(error) {
               return caches.open(CACHE_STATIC_NAME)
                .then(function(cache) {
-                  if (event.request.url.indexOf('/help'){
+                  if (event.request.headers.get('accept').includes('text/html')){
                     //returning offline page for help is a good strategy but not for other pages like css. 
                     return cache.match('/offline.html')
-                  })
+                  }
                })
             })
         }

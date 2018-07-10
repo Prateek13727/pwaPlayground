@@ -3,6 +3,18 @@ var createPostArea = document.querySelector('#create-post');
 var closeCreatePostModalButton = document.querySelector('#close-create-post-modal-btn');
 var sharedMomentsArea = document.querySelector('#shared-moments');
 
+
+// function unregisterServiceWorker() {
+//   if('serviceWorker' in navigator) {
+//     navigator.serviceWorker.getRegistrations
+//       .then(function(registrations){
+//         for(i=0; i < registrations; i++) {
+//             registrations[i].unregister()
+//         }
+//       })
+//   }
+// }
+
 function openCreatePostModal() {
   createPostArea.style.display = 'block';
   if (deferredPrompt) {
@@ -44,23 +56,26 @@ function clearCards() {
   }
 }
 
-function createCard() {
+function createCard(data) {
+  const { image, location, title } = data;
   var cardWrapper = document.createElement('div');
   cardWrapper.className = 'shared-moment-card mdl-card mdl-shadow--2dp';
   var cardTitle = document.createElement('div');
   cardTitle.className = 'mdl-card__title';
-  cardTitle.style.backgroundImage = 'url("/src/images/sf-boat.jpg")';
+  // cardTitle.style.backgroundImage = 'url("/src/images/sf-boat.jpg")';
+  cardTitle.style.backgroundImage = 'url(' + image + ')';
   cardTitle.style.backgroundSize = 'cover';
   cardTitle.style.height = '180px';
   cardWrapper.appendChild(cardTitle);
   var cardTitleTextElement = document.createElement('h2');
   cardTitleTextElement.style.color = "white";
   cardTitleTextElement.className = 'mdl-card__title-text';
-  cardTitleTextElement.textContent = 'San Francisco Trip';
+  cardTitleTextElement.textContent = title;
   cardTitle.appendChild(cardTitleTextElement);
   var cardSupportingText = document.createElement('div');
   cardSupportingText.className = 'mdl-card__supporting-text';
-  cardSupportingText.textContent = 'In San Francisco';
+  console.log(location)
+  cardSupportingText.textContent = location;
   cardSupportingText.style.textAlign = 'center';
   // var cardSaveButton = document.createElement('button');
   // cardSaveButton.textContent = "Save";
@@ -71,7 +86,25 @@ function createCard() {
   sharedMomentsArea.appendChild(cardWrapper);
 }
 
-const url = 'https://httpbin.org/get';
+function convertToArray(data) {
+  const arr = [];
+  for (key in data) {
+    arr.push(data[key])
+  }
+  return arr;
+}
+
+function updateUI(data) {
+  clearCards();
+  const arr = convertToArray(data);
+  console.log(arr)
+  for(i=0; i<arr.length; i++) {
+    createCard(arr[i]);
+  }
+}
+
+// const url = 'https://httpbin.org/get';
+const url = 'https://pwagram-fb9d3.firebaseio.com/posts.json'
 var networkReqReceived = false;
 
 //network
@@ -80,28 +113,36 @@ fetch(url)
     return res.json();
   })
   .then(function(data) {
-    clearCards();
-    createCard();
+    updateUI(data);
     console.log("fromNetwork")
     networkReqReceived = false;
   });
 
-//cache
-if ('caches' in window) {
-  caches.match(url)
-   .then(function(response) {
-     if(response){
-        response.json()   
-     }
-    })
-    .then(function(){
+// // from cache
+// if ('caches' in window) {
+//   caches.match(url)
+//    .then(function(response) {
+//      if(response){
+//         response.json()   
+//      }
+//     })
+//     .then(function(data){
+//       if(!networkReqReceived) {
+//         updateUI(data);
+//         console.log("fromCache")
+//      }
+//     })
+// }
+
+//from indexedDB
+if('indexedDB' in window) {
+  readAllData('posts')
+    .then(function(data) {
       if(!networkReqReceived) {
-        clearCards();
-        createCard();
-        console.log("fromCache")
-     }
+        updateUI(data);
+        console.log("fromCache");
+      }
     })
 }
-
 
 
