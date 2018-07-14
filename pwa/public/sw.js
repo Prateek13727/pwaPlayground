@@ -1,7 +1,7 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = "static-v1";
+var CACHE_STATIC_NAME = "static-v8";
 var CACHE_DYNAMIC_NAME = "dynamic-v1";
 var STATIC_FILES = [
   "/", 
@@ -11,12 +11,12 @@ var STATIC_FILES = [
   "/src/js/app.js", 
   "/src/js/feed.js",
   "/src/js/material.min.js", 
-  "https://fonts.googleapis.com/css?family=Roboto:400,700",
-  "https://fonts.googleapis.com/icon?family=Material+Icons",
-  "https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css",
   "/src/css/app.css",
   "/src/css/feed.css",
-  "/src/images/main-image.jpg"
+  "/src/images/main-image.jpg",
+  "https://fonts.googleapis.com/css?family=Roboto:400,700",
+  "https://fonts.googleapis.com/icon?family=Material+Icons",
+  "https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css"
 ]
 
 function trimCache(cacheName, maxItems) {
@@ -121,6 +121,46 @@ self.addEventListener('fetch', function(event) {
                   }
                })
             })
+        }
+      })
+    )
+  }
+})
+
+const endpoint = 'https://us-central1-pwagram-fb9d3.cloudfunctions.net/storePostsData';
+// const url = 'https://pwagram-fb9d3.firebaseio.com/posts.json'
+self.addEventListener('sync', function(event){
+  if (event.tag === "sync-new-posts") {
+    console.log('[Service Worker] Background Syncing ....');
+    event.waitUntil(
+      readAllData('sync-posts')
+      .then(function(data){
+        for (dt of data) {
+          const { id, location, title } = dt;
+          fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              id,
+              title,
+              location,
+              image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-fb9d3.appspot.com/o/sf-boat.jpg?alt=media&token=120d28e6-a5f9-4b01-b725-7ca703a7afe5'
+            })
+          })
+          .then(function(response){
+            if(response.ok) {
+              response.json()
+                .then(function(res){
+                  deleteItemFromDB('sync-posts', res.id);
+                })
+            }
+          }) 
+          .catch(function(err){
+            console.log(err);
+          })
         }
       })
     )
