@@ -1,7 +1,7 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = "static-v8";
+var CACHE_STATIC_NAME = "static-v11";
 var CACHE_DYNAMIC_NAME = "dynamic-v1";
 var STATIC_FILES = [
   "/", 
@@ -167,6 +167,52 @@ self.addEventListener('sync', function(event){
   }
 })
 
+self.addEventListener('notificationclick', function(event){
+  const { notification, action } = event;
+  if (action === "confirm") {
+    notification.close();
+  } else {
+    clients.matchAll()
+      .then(function(clt){
+        var client = clt.find(function(c){
+          return c.visibilityState === 'visible';
+        })
+        if (client !== undefined) {
+          client.navigate(notification.data.url);
+          client.focus();
+        } else {
+          client.openWindow(notification.data.url);
+        }
+      })    
+    notification.close();
+  }
+});
+
+self.addEventListener('notificationclose', function(event){
+  const { notification } = event;
+  console.log("notification was closed")
+  console.log(notification);
+});
+
+self.addEventListener('push', function(event) {
+  console.log('push notification received', event);
+  var data = { title: 'New', content: 'dummy', openUrl: '/'};
+  if(event.data){
+    data = JSON.parse(event.data.text());
+  }
+  var options = {
+    body: data.content,
+    icon: '/src/images/icons/app-icon-96x96.png',
+    badge: '/src/images/icons/app-icon-96x96.png',
+    data: {
+      url: data.openUrl,
+    }
+  }
+  event.waitUntil(
+    //we access registration here because we have to get to the service worker even if browser is closed
+    self.registration.showNotification(data.title, options)
+  );
+});
 
 // self.addEventListener('fetch', function(event) {
 //   event.respondWith(
