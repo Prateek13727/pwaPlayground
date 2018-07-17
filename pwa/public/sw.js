@@ -1,7 +1,7 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = "static-v32";
+var CACHE_STATIC_NAME = "static-v34";
 var CACHE_DYNAMIC_NAME = "dynamic-v3";
 var STATIC_FILES = [
   "/", 
@@ -135,6 +135,7 @@ self.addEventListener('sync', function(event){
     event.waitUntil(
       readAllData('sync-posts')
       .then(function(data){
+        console.log('[Service Worker] Data from IndexedDb ....', data);
         for (dt of data) {
           var formData = new FormData();
           formData.append('id', dt.id);
