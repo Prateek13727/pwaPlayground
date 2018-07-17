@@ -49,7 +49,7 @@ function intilializeMedia() {
   .catch(function(err) {
     imagePickerArea.style.display ='block';
   })
-  
+
 }
 
 captureBtn.addEventListener('click', function(event){
@@ -57,12 +57,15 @@ captureBtn.addEventListener('click', function(event){
   videoPlayer.style.display ='none';
   captureBtn.style.display ='none';
   var context = canvasElement.getContext('2d');
-  console.log(canvas);
   context.drawImage(videoPlayer, 0, 0, canvas.width, videoPlayer.videoHeight / (videoPlayer.videoWidth / canvas.width));
   videoPlayer.srcObject.getVideoTracks().forEach(function(track){
     track.stop()
   })
   picture = dataURItoBlob(canvasElement.toDataURL());
+})
+
+imagePicker.addEventListener('change', function(event){
+  picture = event.target.files[0];
 })
 
 function openCreatePostModal() {
@@ -90,16 +93,15 @@ function closeCreatePostModal() {
    imagePickerArea.display = 'none';
 }
 
-function OnSaveButtonClicked(event) {
-  console.log("clicked")
-  if ('caches' in window) {
-    caches.open('user-requested')
-      .then(function(cache) {
-        cache.add('https://httpbin.org/get')
-        cache.add('/src/images/sf-boat.jpg')
-      })
-  }
-}
+// function OnSaveButtonClicked(event) {
+//   if ('caches' in window) {
+//     caches.open('user-requested')
+//       .then(function(cache) {
+//         cache.add('https://httpbin.org/get')
+//         cache.add('/src/images/sf-boat.jpg')
+//       })
+//   }
+// }
 
 shareImageButton.addEventListener('click', openCreatePostModal);
 
@@ -128,7 +130,6 @@ function createCard(data) {
   cardTitle.appendChild(cardTitleTextElement);
   var cardSupportingText = document.createElement('div');
   cardSupportingText.className = 'mdl-card__supporting-text';
-  console.log(location)
   cardSupportingText.textContent = location;
   cardSupportingText.style.textAlign = 'center';
   // var cardSaveButton = document.createElement('button');
@@ -167,9 +168,9 @@ fetch(url)
     return res.json();
   })
   .then(function(data) {
+    console.log("[feed.js] Fetched from network");
     updateUI(data);
-    console.log("fromNetwork")
-    networkReqReceived = false;
+    networkReqReceived = true;
   });
 
 // // from cache
@@ -193,8 +194,8 @@ if('indexedDB' in window) {
   readAllData('posts')
     .then(function(data) {
       if(!networkReqReceived) {
+        console.log("[feed.js] Fetched from cache");
         updateUI(data);
-        console.log("fromCache");
       }
     })
 }
@@ -213,7 +214,7 @@ function sendData() {
     body: formData
   })
   .then(function(response){
-    console.log("response", response)
+    console.log("[Feed.js] Response from server", response)
   })
 }
 
@@ -244,7 +245,7 @@ document.addEventListener('submit', function(event){
             snackbarContainer.MaterialSnackbar.showSnackbar(data);
           })
           .catch(function(err){
-            console.log(err);
+            console.log("[Feed.js] Error while writing to indexedDB", err);
           })
       });
   } else {

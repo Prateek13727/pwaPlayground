@@ -10,12 +10,12 @@ var deferredPrompt;
 if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.register('/sw.js')
 	.then(function(){
-		console.log("service worker registered")
+		console.log("[App.js] Service worker registered")
 	});
 }
 
 self.addEventListener('beforeinstallprompt', function(event) {
-	console.log("beforeinstallprompt fired")
+	console.log("[App.js] beforeinstallprompt fired")
 	event.preventDefault();
 	deferredPrompt = event;
 })
@@ -91,9 +91,8 @@ function configurePushSubscription() {
 
 function askForNotificationPermission(){
 	Notification.requestPermission(function(result){
-		console.log('User Choice', result);
 		if(result !== 'granted') {
-			console.log("blocked")
+			console.log("[App.js] notification blocked")
 		} else {
 			configurePushSubscription();
 			// displayConfirmNotification();

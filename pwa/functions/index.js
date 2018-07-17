@@ -92,12 +92,22 @@ exports.storePostsData = functions.https.onRequest(function(request, response){
 										p256dh: sub.val().keys.p256dh
 									}
 								}
-								webPush.sendNotification(pushConfig, JSON.stringify({ title: 'New Post', content: 'New post added', openUrl: '/help'}))
+								webPush.sendNotification(
+									pushConfig, JSON.stringify({
+										 title: 'New Post', 
+										 content: 'New post added', 
+										 openUrl: '/help'
+									}))
 									.catch(function(err){
 										console.log(err);
 									})
 							})
-							response.status(201).json({message: 'Data Stored', id: request.body.id})
+							response
+                  				.status(201)
+                  				.json({ 
+                  					message: "Data stored", 
+                  					id: fields.id 
+              					});
 						})
 						.catch(function(err){
 							respose.status(500).json({error: err})

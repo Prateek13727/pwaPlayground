@@ -1,7 +1,7 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = "static-v28";
+var CACHE_STATIC_NAME = "static-v32";
 var CACHE_DYNAMIC_NAME = "dynamic-v3";
 var STATIC_FILES = [
   "/", 
@@ -150,12 +150,13 @@ self.addEventListener('sync', function(event){
             if(response.ok) {
               response.json()
                 .then(function(res){
+                  console.log("response after creation", res)
                   deleteItemFromDB('sync-posts', res.id);
                 })
             }
           }) 
           .catch(function(err){
-            console.log(err);
+            console.log("[Service Worker] Error from Server", err);
           })
         }
       })
@@ -186,12 +187,10 @@ self.addEventListener('notificationclick', function(event){
 
 self.addEventListener('notificationclose', function(event){
   const { notification } = event;
-  console.log("notification was closed")
-  console.log(notification);
 });
 
 self.addEventListener('push', function(event) {
-  console.log('push notification received', event);
+  console.log('[Service Worker] Received push notification ....');
   var data = { title: 'New', content: 'dummy', openUrl: '/'};
   if(event.data){
     data = JSON.parse(event.data.text());
