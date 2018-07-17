@@ -3,8 +3,14 @@ var createPostArea = document.querySelector('#create-post');
 var closeCreatePostModalButton = document.querySelector('#close-create-post-modal-btn');
 var sharedMomentsArea = document.querySelector('#shared-moments');
 var form = document.querySelector('form');
-var titleInput = document.querySelector('#title')
-var locationInput = document.querySelector('#location')
+var titleInput = document.querySelector('#title');
+var locationInput = document.querySelector('#location');
+var videoPlayer = document.querySelector('#player');
+var canvasElement = document.querySelector('#canvas');
+var captureBtn = document.querySelector('#capture-btn');
+var imagePicker = document.querySelector('#image-picker');
+var imagePickerArea = document.querySelector('#pick-image');
+var picture;
 
 // function unregisterServiceWorker() {
 //   if('serviceWorker' in navigator) {
@@ -17,13 +23,55 @@ var locationInput = document.querySelector('#location')
 //   }
 // }
 
+function intilializeMedia() {
+ if (!('mediaDevices' in navigator)) {
+    navigator.mediaDevices = {}
+ }
+
+ // adding polyfills
+ if(!('getUserMedia' in navigator.mediaDevices)) {
+  navigator.mediaDevices.getUserMedia = function(constraints) {
+    var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    if(!getUserMedia) {
+      return Promise.reject("getUserMedia is not supported")
+    }
+    return new Promise(function(resolve, reject) {
+      getUserMedia.call(navigation, constraints, resolve, reject);
+    })
+  } 
+ }
+
+ navigator.mediaDevices.getUserMedia({video: true})
+  .then(function(stream){
+    videoPlayer.style.display ='block';
+    videoPlayer.srcObject = stream;
+  })
+  .catch(function(err) {
+    imagePickerArea.style.display ='block';
+  })
+  
+}
+
+captureBtn.addEventListener('click', function(event){
+  canvasElement.style.display ='block';
+  videoPlayer.style.display ='none';
+  captureBtn.style.display ='none';
+  var context = canvasElement.getContext('2d');
+  console.log(canvas);
+  context.drawImage(videoPlayer, 0, 0, canvas.width, videoPlayer.videoHeight / (videoPlayer.videoWidth / canvas.width));
+  videoPlayer.srcObject.getVideoTracks().forEach(function(track){
+    track.stop()
+  })
+  picture = dataURItoBlob(canvasElement.toDataURL());
+})
+
 function openCreatePostModal() {
   // createPostArea.style.display = 'block';
+  intilializeMedia();
   createPostArea.style.transform = 'translateY(0)';
   if (deferredPrompt) {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function(choiceResult) {
-      console.log(choiceResult.outcome);
       if (choiceResult.outcome === 'dismissed') {
         console.log('User cancelled installation');
       } else {
@@ -37,6 +85,9 @@ function openCreatePostModal() {
 function closeCreatePostModal() {
   // createPostArea.style.display = 'none';
    createPostArea.style.transform = 'translateY(100vh)';
+   videoPlayer.style.display ='none';
+   canvasElement.style.display = 'none';
+   imagePickerArea.display = 'none';
 }
 
 function OnSaveButtonClicked(event) {
@@ -91,7 +142,7 @@ function createCard(data) {
 
 
 function convertToArray(data) {
-  const arr = [];
+  var arr = [];
   for (key in data) {
     arr.push(data[key])
   }
@@ -100,14 +151,14 @@ function convertToArray(data) {
 
 function updateUI(data) {
   clearCards();
-  const arr = convertToArray(data);
+  var arr = convertToArray(data);
   for(i=0; i<arr.length; i++) {
     createCard(arr[i]);
   }
 }
 
-// const url = 'https://httpbin.org/get';
-const url = 'https://pwagram-fb9d3.firebaseio.com/posts.json'
+// var url = 'https://httpbin.org/get';
+var url = 'https://pwagram-fb9d3.firebaseio.com/posts.json'
 var networkReqReceived = false;
 
 //network
@@ -148,21 +199,18 @@ if('indexedDB' in window) {
     })
 }
 
-const endpoint = "https://us-central1-pwagram-fb9d3.cloudfunctions.net/storePostsData";
-// const url = "https://pwagram-fb9d3.firebaseio.com/posts.json";
+var endpoint = "https://us-central1-pwagram-fb9d3.cloudfunctions.net/storePostsData";
+// var url = "https://pwagram-fb9d3.firebaseio.com/posts.json";
 function sendData() {
-  fetch(endpoint,{
+  var id = new Date().toISOString();
+  var formData = new FormData();
+  formData.append('id', id);
+  formData.append('title', titleInput.value);
+  formData.append('location', locationInput.value);
+  formData.append('file', picture, id + '.png');
+  fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      id: new Date().toISOString(),
-      title: titleInput.value,
-      location: locationInput.value,
-      image: 'https://firebasestorage.googleapis.com/v0/b/pwagram-fb9d3.appspot.com/o/sf-boat.jpg?alt=media&token=120d28e6-a5f9-4b01-b725-7ca703a7afe5'
-    })
+    body: formData
   })
   .then(function(response){
     console.log("response", response)
@@ -182,7 +230,8 @@ document.addEventListener('submit', function(event){
         var post = {
           id: new Date().toISOString(),
           title: titleInput.value,
-          location: locationInput.value
+          location: locationInput.value,
+          picture: picture
         }
         //store post in index DB
         writeData('sync-posts', post)
@@ -201,7 +250,6 @@ document.addEventListener('submit', function(event){
   } else {
     sendData();
   }
-
   closeCreatePostModal();
 })
 
