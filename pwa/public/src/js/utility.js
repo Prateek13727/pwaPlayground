@@ -46,7 +46,7 @@ function deleteItemFromDB(storeName, id) {
 			return tx.complete;
 		})
 		.then(function() {
-			console.log("item-deleted")
+			console.log("[Utility] Item deleted", id);
 		})
 }
 

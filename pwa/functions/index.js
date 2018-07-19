@@ -74,7 +74,9 @@ exports.storePostsData = functions.https.onRequest(function(request, response){
 							  "/o/" +
 							  encodeURIComponent(uploadedFile.name) +
 							  "?alt=media&token=" +
-							  uuid
+							  uuid,
+					  	  	latitude: fields.locationLat,
+					  	  	longitude: fields.locationLong
 						})
 						.then(function(){
 							webPush.setVapidDetails('mailto: pratmbic@gmail.com',

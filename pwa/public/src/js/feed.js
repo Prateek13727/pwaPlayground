@@ -11,6 +11,9 @@ var captureBtn = document.querySelector('#capture-btn');
 var imagePicker = document.querySelector('#image-picker');
 var imagePickerArea = document.querySelector('#pick-image');
 var picture;
+var locationBtn = document.querySelector('#location-btn');
+var locationLoader = document.querySelector('#location-loader') 
+var fetchedLocation;
 
 // function unregisterServiceWorker() {
 //   if('serviceWorker' in navigator) {
@@ -22,6 +25,35 @@ var picture;
 //       })
 //   }
 // }
+
+function intilializeGeolocation() {
+  if(!('geolocation' in navigator)) {
+    locationBtn.style.display = "none";
+    locationLoader.style.display = "none";
+    return;
+  }
+}
+
+locationBtn.addEventListener('click', function() {
+  locationBtn.style.display = "none";
+  locationLoader.style.display = "block";
+  if(('geolocation' in navigator)) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      fetchedLocation = { 
+        lat: position.coords.latitude,
+        long: position.coords.longitude
+      }
+      locationInput.value = "In Bangalore";
+      locationBtn.style.display = "inline";
+      locationLoader.style.display = "none";
+      console.log("[Feed.js] Current-location", fetchedLocation);
+    }, function(err){
+      console.log(err);
+    }, {
+      timeout: 5000
+    })
+  }
+})
 
 function intilializeMedia() {
  if (!('mediaDevices' in navigator)) {
@@ -71,6 +103,7 @@ imagePicker.addEventListener('change', function(event){
 function openCreatePostModal() {
   // createPostArea.style.display = 'block';
   intilializeMedia();
+  intilializeGeolocation();
   createPostArea.style.transform = 'translateY(0)';
   if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -209,6 +242,9 @@ function sendData() {
   formData.append('title', titleInput.value);
   formData.append('location', locationInput.value);
   formData.append('file', picture, id + '.png');
+  formData.append('locationLat', fetchedLocation.lat);
+  formData.append('locationLong', fetchedLocation.long);
+  
   fetch(endpoint, {
     method: 'POST',
     body: formData
@@ -232,7 +268,11 @@ document.addEventListener('submit', function(event){
           id: new Date().toISOString(),
           title: titleInput.value,
           location: locationInput.value,
-          picture: picture
+          picture: picture,
+          locationCoords: {
+            lat: fetchedLocation.lat,
+            long: fetchedLocation.long
+          }
         }
         //store post in index DB
         writeData('sync-posts', post)

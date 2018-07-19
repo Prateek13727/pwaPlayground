@@ -1,7 +1,7 @@
 importScripts('/src/js/idb.js');
 importScripts('/src/js/utility.js');
 
-var CACHE_STATIC_NAME = "static-v34";
+var CACHE_STATIC_NAME = "static-v38";
 var CACHE_DYNAMIC_NAME = "dynamic-v3";
 var STATIC_FILES = [
   "/", 
@@ -142,6 +142,8 @@ self.addEventListener('sync', function(event){
           formData.append('title', dt.title);
           formData.append('location', dt.location);
           formData.append('file', dt.picture, dt.id + '.png');
+          formData.append('locationLat', dt.locationCoords.lat);
+          formData.append('locationLong', dt.locationCoords.long);
           const { id, location, title } = dt;
           fetch(endpoint, {
             method: 'POST',
@@ -151,7 +153,6 @@ self.addEventListener('sync', function(event){
             if(response.ok) {
               response.json()
                 .then(function(res){
-                  console.log("response after creation", res)
                   deleteItemFromDB('sync-posts', res.id);
                 })
             }
