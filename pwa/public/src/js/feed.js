@@ -12,8 +12,8 @@ var imagePicker = document.querySelector('#image-picker');
 var imagePickerArea = document.querySelector('#pick-image');
 var picture;
 var locationBtn = document.querySelector('#location-btn');
-var locationLoader = document.querySelector('#location-loader') 
-var fetchedLocation;
+var locationLoader = document.querySelector('#location-loader');
+var fetchedLocation = { lat: 0, long: 0 };
 
 // function unregisterServiceWorker() {
 //   if('serviceWorker' in navigator) {
@@ -27,9 +27,9 @@ var fetchedLocation;
 // }
 
 function intilializeGeolocation() {
+  locationLoader.style.display = "none";
   if(!('geolocation' in navigator)) {
     locationBtn.style.display = "none";
-    locationLoader.style.display = "none";
     return;
   }
 }
@@ -48,6 +48,10 @@ locationBtn.addEventListener('click', function() {
       locationLoader.style.display = "none";
       console.log("[Feed.js] Current-location", fetchedLocation);
     }, function(err){
+      fetchedLocation = { 
+        lat: 0,
+        long: 0
+      }
       console.log(err);
     }, {
       timeout: 5000
@@ -104,7 +108,6 @@ function openCreatePostModal() {
   // createPostArea.style.display = 'block';
   intilializeMedia();
   intilializeGeolocation();
-  createPostArea.style.transform = 'translateY(0)';
   if (deferredPrompt) {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function(choiceResult) {
@@ -116,14 +119,24 @@ function openCreatePostModal() {
     });
     deferredPrompt = null;
   }
+  setTimeout(function(){
+    createPostArea.style.transform = 'translateY(0)'
+  }, 1)
 }
 
 function closeCreatePostModal() {
   // createPostArea.style.display = 'none';
-   createPostArea.style.transform = 'translateY(100vh)';
-   videoPlayer.style.display ='none';
-   canvasElement.style.display = 'none';
-   imagePickerArea.display = 'none';
+   // createPostArea.style.transform = 'translateY(100vh)';
+  videoPlayer.style.display ='none';
+  canvasElement.style.display = 'none';
+  imagePickerArea.style.display = 'none';
+  captureBtn.style.display ="none";
+  videoPlayer.srcObject.getVideoTracks().forEach(function(track){
+    track.stop()
+  })
+  setTimeout(function(){
+    createPostArea.style.transform = 'translateY(100vh)'
+  }, 1)
 }
 
 // function OnSaveButtonClicked(event) {
